@@ -36,6 +36,7 @@ class User(AbstractBaseUser):
     phonenumber = models.CharField(max_length=50, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
+    role = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True, blank=True)
     created_by = models.IntegerField(blank=True, null=True)
     updated_by = models.IntegerField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -62,3 +63,43 @@ class User(AbstractBaseUser):
     @property
     def is_staff(self):
         return self.is_admin
+    
+
+class Role(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    class Meta:
+        db_table = "user_role"
+        verbose_name = "Role"
+        verbose_name_plural = "Roles"
+
+    def __str__(self):
+        return self.name
+
+    
+class Permission(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    content_type = models.ForeignKey(
+        'contenttypes.ContentType', on_delete=models.CASCADE, related_name='account_permissions'
+    )
+    codename = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = "user_permission"
+        verbose_name = "Permission"
+        verbose_name_plural = "Permissions"
+
+    def __str__(self):
+        return self.name + " (" + str(self.content_type) + ")"
+    
+    
+class RolePermission(models.Model):
+    role = models.ForeignKey('Role', on_delete=models.CASCADE)
+    permission = models.ForeignKey('Permission', on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "user_role_permissions"
+        unique_together = ('role', 'permission')  # Ensure unique combination of role and permission
+
+    def __str__(self):
+        return f"{self.role} - {self.permission}"
