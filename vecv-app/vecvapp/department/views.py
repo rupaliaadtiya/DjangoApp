@@ -4,25 +4,22 @@ from rest_framework.response import Response
 from rest_framework import status
 from department import serializers, models
 from rest_framework.permissions import IsAuthenticated, BasePermission
+from .permissions import CanAddDepartment, CanDeleteDepartment, CanChangeDepartment, CanViewDepartment
 
 # Create your views here.
-class CanAddDepartment(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.has_perm('department.add_department') 
-    
 class DepartmentApiView(APIView):
     serializer_class = serializers.DepartmentSerializer
-    permission_classes = [ IsAuthenticated, CanAddDepartment ]
-    def post(self, request) -> Response:
-        if self.permission_classes[1].has_permission(request, self):
-            serializer = self.serializer_class(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response({'message': 'Department Created successfully', 'data': serializer.data}, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response({'error': 'You do not have permission to create departments.'}, status=status.HTTP_403_FORBIDDEN)
+    permission_classes = [IsAuthenticated, CanAddDepartment, CanDeleteDepartment, CanChangeDepartment, CanViewDepartment]
 
+    def post(self, request) -> Response:
+        #if CanAddDepartment().has_permission(request, self):  # Direct call to instance
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Department Created successfully', 'data': serializer.data}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        #else:
+            #return Response({'error': 'You do not have permission to create departments.'}, status=status.HTTP_403_FORBIDDEN)
 
     def get(self, request) -> Response:
         department_id = request.GET.get('department_id')
